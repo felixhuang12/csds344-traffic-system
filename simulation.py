@@ -26,12 +26,7 @@ pedestrianDirections = {
     }
 }
 
-pedestrianStartingPositions = {
-    0: 'nw',
-    1: 'ne',
-    2: 'se',
-    3: 'sw'
-}
+pedestrianStartingPositions = {0: 'nw', 1: 'ne', 2: 'se', 3: 'sw'}
 
 pedestrianStartingCoords = {
     'nw': (320, 340),
@@ -46,11 +41,12 @@ directionNums = {0: 'up', 1: 'right', 2: 'down', 3: 'left'}
 x = {'up': 420, 'right': 1000, 'down': 540, 'left': 0}
 y = {'up': 0, 'right': 420, 'down': 1000, 'left': 540}
 stopLines = {'up': 280, 'right': 700, 'down': 690, 'left': 280} # coming from up, right, down, left
-turnThresholdLines = {'up': {'left': 410, 'right': 550},
-                      'right': {'up': 550, 'down': 410}, 
-                      'down': {'left': 410, 'right': 550},
-                      'left': {'up': 550, 'down': 410}, 
-                      } # coming from up, right, down, left
+turnThresholdLines = {  # coming from up, right, down, left
+    'up': {'left': 410, 'right': 550},
+    'right': {'up': 550, 'down': 410}, 
+    'down': {'left': 410, 'right': 550},
+    'left': {'up': 550, 'down': 410}, 
+}
 
 ## signals
 signalCoords = [(480, 410), (530, 460), (480, 510), (430, 460)]
@@ -76,6 +72,15 @@ pedestriansInNorthCrossWalk = set()
 pedestriansInEastCrossWalk = set()
 pedestriansInSouthCrossWalk = set()
 pedestriansInWestCrossWalk = set()
+
+def northCrossWalkEmpty():
+    return len(pedestriansInNorthCrossWalk) == 0
+def eastCrossWalkEmpty():
+    return len(pedestriansInEastCrossWalk) == 0
+def southCrossWalkEmpty():
+    return len(pedestriansInSouthCrossWalk) == 0
+def westCrossWalkEmpty():
+    return len(pedestriansInWestCrossWalk) == 0
 
 class Pedestrian(pygame.sprite.Sprite):
     def __init__(self, startingPositionNum: int, id: int):
@@ -185,7 +190,7 @@ class Car(pygame.sprite.Sprite):
                     or self.y > stopLines['up']):
                     self.y += self.speed
                     
-            elif (self.destinationDirection == 'left'):
+            elif (self.destinationDirection == 'left' and westCrossWalkEmpty()):
                 if (self.y == turnThresholdLines['up']['left']):
                     self.x -= self.speed
                 elif ((currentGreenSignals == 0 and self.y < turnThresholdLines['up']['left'])
@@ -193,7 +198,7 @@ class Car(pygame.sprite.Sprite):
                       or (self.y > stopLines['up'] and self.y < turnThresholdLines['up']['left'])):
                     self.y += self.speed
 
-            elif (self.destinationDirection == 'right'):
+            elif (self.destinationDirection == 'right' and eastCrossWalkEmpty()):
                 if (self.y == turnThresholdLines['up']['right']):
                     self.x += self.speed
                 elif ((currentGreenSignals == 0 and self.y < turnThresholdLines['up']['right'])
@@ -208,7 +213,7 @@ class Car(pygame.sprite.Sprite):
                     or self.y < stopLines['down']):
                     self.y -= self.speed
                     
-            elif (self.destinationDirection == 'left'):
+            elif (self.destinationDirection == 'left' and westCrossWalkEmpty()):
                 if (self.y == turnThresholdLines['down']['left']):
                     self.x -= self.speed
                 elif ((currentGreenSignals == 0 and self.y > turnThresholdLines['down']['left'])
@@ -216,7 +221,7 @@ class Car(pygame.sprite.Sprite):
                       or (self.y < stopLines['down'] and self.y > turnThresholdLines['down']['left'])):
                     self.y -= self.speed
 
-            elif (self.destinationDirection == 'right'):
+            elif (self.destinationDirection == 'right' and eastCrossWalkEmpty()):
                 if (self.y == turnThresholdLines['down']['right']):
                     self.x += self.speed
                 elif ((currentGreenSignals == 0 and self.y > turnThresholdLines['down']['right'])
@@ -231,7 +236,7 @@ class Car(pygame.sprite.Sprite):
                     or self.x > stopLines['left']):
                     self.x += self.speed
                     
-            elif (self.destinationDirection == 'up'):
+            elif (self.destinationDirection == 'up' and northCrossWalkEmpty()):
                 if (self.x == turnThresholdLines['left']['up']):
                     self.y -= self.speed
                 elif ((currentGreenSignals == 1 and self.x < turnThresholdLines['left']['up'])
@@ -239,7 +244,7 @@ class Car(pygame.sprite.Sprite):
                       or (self.x > stopLines['left'] and self.x < turnThresholdLines['left']['up'])):
                     self.x += self.speed
 
-            elif (self.destinationDirection == 'down'):
+            elif (self.destinationDirection == 'down' and southCrossWalkEmpty()):
                 if (self.x == turnThresholdLines['left']['down']):
                     self.y += self.speed
                 elif ((currentGreenSignals == 1 and self.x < turnThresholdLines['left']['down'])
@@ -254,7 +259,7 @@ class Car(pygame.sprite.Sprite):
                     or self.x < stopLines['right']):
                     self.x -= self.speed
                     
-            elif (self.destinationDirection == 'up'):
+            elif (self.destinationDirection == 'up' and northCrossWalkEmpty()):
                 if (self.x == turnThresholdLines['right']['up']):
                     self.y -= self.speed
                 elif ((currentGreenSignals == 1 and self.x > turnThresholdLines['right']['up'])
@@ -262,7 +267,7 @@ class Car(pygame.sprite.Sprite):
                       or (self.x < stopLines['right'] and self.x > turnThresholdLines['right']['up'])):
                     self.x -= self.speed
 
-            elif (self.destinationDirection == 'down'):
+            elif (self.destinationDirection == 'down' and southCrossWalkEmpty()):
                 if (self.x == turnThresholdLines['right']['down']):
                     self.y += self.speed
                 elif ((currentGreenSignals == 1 and self.x > turnThresholdLines['right']['down'])
