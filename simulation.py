@@ -8,12 +8,13 @@ import sys
 directionNums = {0: 'up', 1: 'right', 2: 'down', 3: 'left'}
 speeds = {'car': 2.0, 'person': 0.5}
 signalCoords = [(480, 410), (530, 460), (480, 510), (430, 460)]
+signalTextCoords = [(480, 390), (560, 460), (480, 560), (410, 460)]
 # signalCoords = [(150, 150), (200, 200), (150, 250), (100, 200)]
 gap = 25
 rotationAngle = 3
-greenSignalTime = 10
-yellowSignalTime = 3
-redSignalTime = 10
+defaultGreenSignalDuration = 10
+defaultYellowSignalDuration = 3
+defaultRedSignalDuration = 13
 # starting car coordinates
 x = {'up': 420, 'right': 1000, 'down': 540, 'left': 30}
 y = {'up': 30, 'right': 420, 'down': 1000, 'left': 540}
@@ -29,8 +30,8 @@ turnThresholdLines = {'up': {'left': 410, 'right': 550},
 
 ### global state
 signals = []
-currentGreenSignals = (0, 2) # 0 = up, 1 = right, 2 = down, 3 = left
-nextGreenSignals = (1, 3)
+currentGreenSignals = 0 # 0 north/south; 1 = west/east
+nextGreenSignals = 1 # 0 north/south; 1 = west/east
 yellowSignalFlag = False
 carsTurned = {'up': [], 'right': [], 'down': [], 'left': []}
 carsNotTurned = {'up': [], 'right': [], 'down': [], 'left': []}
@@ -44,7 +45,7 @@ class TrafficSignal:
         self.redDuration = redDuration
         self.yellowDuration = yellowDuration
         self.greenDuration = greenDuration
-        self.count = ''
+        self.text = ''
 
 class Car(pygame.sprite.Sprite):
     def __init__(self, startingDirNum: int):
@@ -66,95 +67,134 @@ class Car(pygame.sprite.Sprite):
     def move(self):
         if (self.startingLocation == 'up'):
             if (self.destinationDirection == 'down'):
-                if (currentGreenSignals == (0, 2) 
-                    or ((yellowSignalFlag or currentGreenSignals != (0, 2)) and self.y < stopLines['up']) 
+                if (currentGreenSignals == 0 
+                    or ((yellowSignalFlag or currentGreenSignals != 0) and self.y < stopLines['up']) 
                     or self.y > stopLines['up']):
                     self.y += self.speed
                     
             elif (self.destinationDirection == 'left'):
                 if (self.y == turnThresholdLines['up']['left']):
                     self.x -= self.speed
-                elif ((currentGreenSignals == (0, 2) and self.y < turnThresholdLines['up']['left'])
-                      or ((yellowSignalFlag or currentGreenSignals != (0, 2)) and self.y < stopLines['up'])
+                elif ((currentGreenSignals == 0 and self.y < turnThresholdLines['up']['left'])
+                      or ((yellowSignalFlag or currentGreenSignals != 0) and self.y < stopLines['up'])
                       or (self.y > stopLines['up'] and self.y < turnThresholdLines['up']['left'])):
                     self.y += self.speed
 
             elif (self.destinationDirection == 'right'):
                 if (self.y == turnThresholdLines['up']['right']):
                     self.x += self.speed
-                elif ((currentGreenSignals == (0, 2) and self.y < turnThresholdLines['up']['right'])
-                      or ((yellowSignalFlag or currentGreenSignals != (0, 2)) and self.y < stopLines['up'])
+                elif ((currentGreenSignals == 0 and self.y < turnThresholdLines['up']['right'])
+                      or ((yellowSignalFlag or currentGreenSignals != 0) and self.y < stopLines['up'])
                       or (self.y > stopLines['up'] and self.y < turnThresholdLines['up']['right'])):
                     self.y += self.speed
                 
         elif (self.startingLocation == 'down'):
             if (self.destinationDirection == 'up'):
-                if (currentGreenSignals == (0, 2) 
-                    or ((yellowSignalFlag or currentGreenSignals != (0, 2)) and self.y > stopLines['down']) 
+                if (currentGreenSignals == 0 
+                    or ((yellowSignalFlag or currentGreenSignals != 0) and self.y > stopLines['down']) 
                     or self.y < stopLines['down']):
                     self.y -= self.speed
                     
             elif (self.destinationDirection == 'left'):
                 if (self.y == turnThresholdLines['down']['left']):
                     self.x -= self.speed
-                elif ((currentGreenSignals == (0, 2) and self.y > turnThresholdLines['down']['left'])
-                      or ((yellowSignalFlag or currentGreenSignals != (0, 2)) and self.y > stopLines['down'])
+                elif ((currentGreenSignals == 0 and self.y > turnThresholdLines['down']['left'])
+                      or ((yellowSignalFlag or currentGreenSignals != 0) and self.y > stopLines['down'])
                       or (self.y < stopLines['down'] and self.y > turnThresholdLines['down']['left'])):
                     self.y -= self.speed
 
             elif (self.destinationDirection == 'right'):
                 if (self.y == turnThresholdLines['down']['right']):
                     self.x += self.speed
-                elif ((currentGreenSignals == (0, 2) and self.y > turnThresholdLines['down']['right'])
-                      or ((yellowSignalFlag or currentGreenSignals != (0, 2)) and self.y > stopLines['down'])
+                elif ((currentGreenSignals == 0 and self.y > turnThresholdLines['down']['right'])
+                      or ((yellowSignalFlag or currentGreenSignals != 0) and self.y > stopLines['down'])
                       or (self.y < stopLines['down'] and self.y > turnThresholdLines['down']['right'])):
                     self.y -= self.speed
                 
         elif (self.startingLocation == 'left'):
             if (self.destinationDirection == 'right'):
-                if (currentGreenSignals == (1, 3) 
-                    or ((yellowSignalFlag or currentGreenSignals != (1, 3)) and self.x < stopLines['left']) 
+                if (currentGreenSignals == 1 
+                    or ((yellowSignalFlag or currentGreenSignals != 1) and self.x < stopLines['left']) 
                     or self.x > stopLines['left']):
                     self.x += self.speed
                     
             elif (self.destinationDirection == 'up'):
                 if (self.x == turnThresholdLines['left']['up']):
                     self.y -= self.speed
-                elif ((currentGreenSignals == (1, 3) and self.x < turnThresholdLines['left']['up'])
-                      or ((yellowSignalFlag or currentGreenSignals != (1, 3)) and self.x < stopLines['left'])
+                elif ((currentGreenSignals == 1 and self.x < turnThresholdLines['left']['up'])
+                      or ((yellowSignalFlag or currentGreenSignals != 1) and self.x < stopLines['left'])
                       or (self.x > stopLines['left'] and self.x < turnThresholdLines['left']['up'])):
                     self.x += self.speed
 
             elif (self.destinationDirection == 'down'):
                 if (self.x == turnThresholdLines['left']['down']):
                     self.y += self.speed
-                elif ((currentGreenSignals == (1, 3) and self.x < turnThresholdLines['left']['down'])
-                      or ((yellowSignalFlag or currentGreenSignals != (1, 3)) and self.x < stopLines['left'])
+                elif ((currentGreenSignals == 1 and self.x < turnThresholdLines['left']['down'])
+                      or ((yellowSignalFlag or currentGreenSignals != 1) and self.x < stopLines['left'])
                       or (self.x > stopLines['left'] and self.x < turnThresholdLines['left']['down'])):
                     self.x += self.speed
 
         elif (self.startingLocation == 'right'):
             if (self.destinationDirection == 'left'):
-                if (currentGreenSignals == (1, 3) 
-                    or ((yellowSignalFlag or currentGreenSignals != (1, 3)) and self.x > stopLines['right']) 
+                if (currentGreenSignals == 1 
+                    or ((yellowSignalFlag or currentGreenSignals != 1) and self.x > stopLines['right']) 
                     or self.x < stopLines['right']):
                     self.x -= self.speed
                     
             elif (self.destinationDirection == 'up'):
                 if (self.x == turnThresholdLines['right']['up']):
                     self.y -= self.speed
-                elif ((currentGreenSignals == (1, 3) and self.x > turnThresholdLines['right']['up'])
-                      or ((yellowSignalFlag or currentGreenSignals != (1, 3)) and self.x > stopLines['right'])
+                elif ((currentGreenSignals == 1 and self.x > turnThresholdLines['right']['up'])
+                      or ((yellowSignalFlag or currentGreenSignals != 1) and self.x > stopLines['right'])
                       or (self.x < stopLines['right'] and self.x > turnThresholdLines['right']['up'])):
                     self.x -= self.speed
 
             elif (self.destinationDirection == 'down'):
                 if (self.x == turnThresholdLines['right']['down']):
                     self.y += self.speed
-                elif ((currentGreenSignals == (1, 3) and self.x > turnThresholdLines['right']['down'])
-                      or ((yellowSignalFlag or currentGreenSignals != (1, 3)) and self.x > stopLines['right'])
+                elif ((currentGreenSignals == 1 and self.x > turnThresholdLines['right']['down'])
+                      or ((yellowSignalFlag or currentGreenSignals != 1) and self.x > stopLines['right'])
                       or (self.x < stopLines['right'] and self.x > turnThresholdLines['right']['down'])):
                     self.x -= self.speed
+
+def initializeSignals():
+    signal = TrafficSignal(defaultRedSignalDuration, defaultYellowSignalDuration, defaultGreenSignalDuration)
+    global signals
+    signals = [signal, signal, signal, signal]
+    simulate()
+
+def simulate():
+    global currentGreenSignals, yellowSignalFlag, nextGreenSignals
+
+    while (signals[currentGreenSignals].greenDuration > 0):
+        updateSignals()
+        time.sleep(1)
+
+    yellowSignalFlag = 1
+
+    while(signals[currentGreenSignals].yellowDuration > 0):
+        updateSignals()
+        time.sleep(1)
+    
+    yellowSignalFlag = 0
+    signals[currentGreenSignals].greenDuration = defaultGreenSignalDuration
+    signals[currentGreenSignals].yellowDuration = defaultYellowSignalDuration
+    signals[currentGreenSignals].redDuration = defaultRedSignalDuration
+    temp = currentGreenSignals
+    currentGreenSignals = nextGreenSignals
+    nextGreenSignals = temp
+    simulate()
+
+def updateSignals():
+    for i in range(0, 2):
+        if (i == currentGreenSignals):
+            if (yellowSignalFlag == 0):
+                signals[i].greenDuration -= 1
+            else:
+                signals[i].yellowDuration -= 1
+        else:
+            signals[i].redDuration -= 1
+
 
 def main():
     background = pygame.image.load('images/intersection.png')
@@ -174,7 +214,10 @@ def main():
     running = True
     clock = pygame.time.Clock()
 
-    car = Car(3)
+    # car = Car(3)
+    signalThread = threading.Thread(name="init", target=initializeSignals, args=())
+    signalThread.daemon = True
+    signalThread.start()
 
     while running:
         for event in pygame.event.get():
@@ -186,18 +229,43 @@ def main():
         keys = pygame.key.get_pressed()
         if keys[pygame.K_ESCAPE]:
             running = False
-        
-        screen.blit(background,(0,0))   # display background in simulation
 
-        for i in range(0, 4):
-            screen.blit(redSignal, signalCoords[i])
+        font = pygame.font.Font(None, 30)
+        screen.blit(background,(0,0))   # display background in simulation
+        
+        for i in range(0, 2):
+            # display signal
+            if (i == currentGreenSignals):
+                if (yellowSignalFlag == 1):
+                    signals[i].text = signals[i].yellowDuration
+                    signals[i+2].text = signals[i+2].yellowDuration
+                    screen.blit(yellowSignal, signalCoords[i])
+                    screen.blit(yellowSignal, signalCoords[i+2])
+                else:
+                    signals[i].text = signals[i].greenDuration
+                    signals[i+2].text = signals[i+2].greenDuration
+                    screen.blit(greenSignal, signalCoords[i])
+                    screen.blit(greenSignal, signalCoords[i+2])
+            else:
+                signals[i].text = signals[i].redDuration
+                signals[i+2].text = signals[i+2].redDuration
+                screen.blit(redSignal, signalCoords[i])
+                screen.blit(redSignal, signalCoords[i+2])
+            
+            # display timer
+            signalText = font.render(str(signals[i].text), True, (255, 255, 255), (0, 0, 0))
+            screen.blit(signalText, signalTextCoords[i])
+            screen.blit(signalText, signalTextCoords[i+2])
+
+
+                
         # if (car_x >= 560):
         #     car_x -= speeds['car']
             # car_y += speeds['car']
         # screen.blit(car, (car_x, car_y))
-        for car in simulation:
-            car.render(screen)
-            car.move()
+        # for car in simulation:
+        #     car.render(screen)
+        #     car.move()
         pygame.display.update()
         clock.tick(60)
 
