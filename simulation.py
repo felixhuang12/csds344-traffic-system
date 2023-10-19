@@ -16,11 +16,11 @@ defaultGreenSignalDuration = 10
 defaultYellowSignalDuration = 3
 defaultRedSignalDuration = 13
 # starting car coordinates
-x = {'up': 420, 'right': 1000, 'down': 540, 'left': 30}
-y = {'up': 30, 'right': 420, 'down': 1000, 'left': 540}
+x = {'up': 420, 'right': 1000, 'down': 540, 'left': 0}
+y = {'up': 0, 'right': 420, 'down': 1000, 'left': 540}
 # x = {'down': [420], 'left': [1000], 'up': [540], 'right': [0]}
 # y = {'down': [1000], 'left': [420], 'up': [0], 'right': [540]}
-stopLines = {'up': 280, 'right': 700, 'down': 540, 'left': 280} # coming from up, right, down, left
+stopLines = {'up': 280, 'right': 700, 'down': 690, 'left': 280} # coming from up, right, down, left
 turnThresholdLines = {'up': {'left': 410, 'right': 550},
                       'right': {'up': 550, 'down': 410}, 
                       'down': {'left': 410, 'right': 550},
@@ -157,6 +157,11 @@ class Car(pygame.sprite.Sprite):
                       or (self.x < stopLines['right'] and self.x > turnThresholdLines['right']['down'])):
                     self.x -= self.speed
 
+def generateCars():
+    while (True):
+        Car(random.randint(0, 3))
+        time.sleep(5)
+
 def initializeSignals():
     signal = TrafficSignal(defaultRedSignalDuration, defaultYellowSignalDuration, defaultGreenSignalDuration)
     global signals
@@ -170,13 +175,13 @@ def simulate():
         updateSignals()
         time.sleep(1)
 
-    yellowSignalFlag = 1
+    yellowSignalFlag = True
 
     while(signals[currentGreenSignals].yellowDuration > 0):
         updateSignals()
         time.sleep(1)
     
-    yellowSignalFlag = 0
+    yellowSignalFlag = False
     signals[currentGreenSignals].greenDuration = defaultGreenSignalDuration
     signals[currentGreenSignals].yellowDuration = defaultYellowSignalDuration
     signals[currentGreenSignals].redDuration = defaultRedSignalDuration
@@ -188,7 +193,7 @@ def simulate():
 def updateSignals():
     for i in range(0, 2):
         if (i == currentGreenSignals):
-            if (yellowSignalFlag == 0):
+            if (not yellowSignalFlag):
                 signals[i].greenDuration -= 1
             else:
                 signals[i].yellowDuration -= 1
@@ -218,6 +223,11 @@ def main():
     signalThread = threading.Thread(name="init", target=initializeSignals, args=())
     signalThread.daemon = True
     signalThread.start()
+    
+    # generate cars
+    carThread = threading.Thread(name="generateCars", target=generateCars, args=())
+    carThread.daemon = True
+    carThread.start()
 
     while running:
         for event in pygame.event.get():
@@ -236,7 +246,7 @@ def main():
         for i in range(0, 2):
             # display signal
             if (i == currentGreenSignals):
-                if (yellowSignalFlag == 1):
+                if (yellowSignalFlag):
                     signals[i].text = signals[i].yellowDuration
                     signals[i+2].text = signals[i+2].yellowDuration
                     screen.blit(yellowSignal, signalCoords[i])
@@ -257,15 +267,9 @@ def main():
             screen.blit(signalText, signalTextCoords[i])
             screen.blit(signalText, signalTextCoords[i+2])
 
-
-                
-        # if (car_x >= 560):
-        #     car_x -= speeds['car']
-            # car_y += speeds['car']
-        # screen.blit(car, (car_x, car_y))
-        # for car in simulation:
-        #     car.render(screen)
-        #     car.move()
+        for car in simulation:
+            car.render(screen)
+            car.move()
         pygame.display.update()
         clock.tick(60)
 
