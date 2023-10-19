@@ -90,7 +90,7 @@ class Pedestrian(pygame.sprite.Sprite):
         self.coords = pedestrianStartingCoords[self.startingPosition]
         self.x = self.coords[0]
         self.y = self.coords[1]
-        self.image = pygame.transform.scale(pygame.image.load('images/person.jpeg'), (20, 20))
+        self.image = pygame.transform.scale(pygame.image.load('images/person.png'), (20, 20))
         self.speed = speeds['person']
         self.id = id
         simulatedPedestrians.add(self)
@@ -329,16 +329,7 @@ def main():
     yellowSignal = pygame.image.load('images/signals/yellow.png')
     greenSignal = pygame.image.load('images/signals/green.png')
 
-    # example - TODO: delete
-    # car = pygame.image.load('images/car.png')
-    # car = pygame.transform.scale(car, (30, 30))
-    # car_x = 1000
-    # car_y = 420
 
-    running = True
-    clock = pygame.time.Clock()
-
-    # car = Car(3)
     signalThread = threading.Thread(name="init", target=initializeSignals, args=())
     signalThread.daemon = True
     signalThread.start()
@@ -352,6 +343,9 @@ def main():
     pedestrianThread = threading.Thread(name="generatePedestrians", target=generatePedestrians, args=())
     pedestrianThread.daemon = True
     pedestrianThread.start()
+    
+    running = True
+    clock = pygame.time.Clock()
 
     while running:
         for event in pygame.event.get():
@@ -366,8 +360,6 @@ def main():
 
         font = pygame.font.Font(None, 30)
         screen.blit(background,(0,0))   # display background in simulation
-
-        # screen.blit(pedestrian, (pedX, pedY))
         
         for i in range(0, 2):
             # display signal
@@ -393,10 +385,12 @@ def main():
             screen.blit(signalText, signalTextCoords[i])
             screen.blit(signalText, signalTextCoords[i+2])
 
+        # display cars
         for car in simulatedCars:
             car.render(screen)
             car.move()
         
+        # display pedestrians
         for pedestrian in simulatedPedestrians:
             pedestrian.render(screen)
             pedestrian.move()
