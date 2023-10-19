@@ -5,21 +5,46 @@ import pygame
 import sys
 
 ### constants
+speeds = {'car': 2.0, 'person': 1.0}
+## pedestrians
+pedestrianDirections = {
+    'nw': {
+        0: 'right',
+        1: 'down'
+    },
+    'ne': {
+        0: 'left',
+        1: 'down'
+    },
+    'se': {
+        0: 'left',
+        1: 'up'
+    },
+    'sw': {
+        0: 'right',
+        1: 'up'
+    }
+}
+
+pedestrianStartingPositions = {
+    0: 'nw',
+    1: 'ne',
+    2: 'se',
+    3: 'sw'
+}
+
+pedestrianStartingCoords = {
+    'nw': (320, 340),
+    'ne': (620, 320),
+    'se': (640, 620),
+    'sw': (340, 640)
+}
+
+## cars
 directionNums = {0: 'up', 1: 'right', 2: 'down', 3: 'left'}
-speeds = {'car': 2.0, 'person': 0.5}
-signalCoords = [(480, 410), (530, 460), (480, 510), (430, 460)]
-signalTextCoords = [(480, 390), (560, 460), (480, 560), (410, 460)]
-# signalCoords = [(150, 150), (200, 200), (150, 250), (100, 200)]
-gap = 25
-rotationAngle = 3
-defaultGreenSignalDuration = 10
-defaultYellowSignalDuration = 3
-defaultRedSignalDuration = 13
 # starting car coordinates
 x = {'up': 420, 'right': 1000, 'down': 540, 'left': 0}
 y = {'up': 0, 'right': 420, 'down': 1000, 'left': 540}
-# x = {'down': [420], 'left': [1000], 'up': [540], 'right': [0]}
-# y = {'down': [1000], 'left': [420], 'up': [0], 'right': [540]}
 stopLines = {'up': 280, 'right': 700, 'down': 690, 'left': 280} # coming from up, right, down, left
 turnThresholdLines = {'up': {'left': 410, 'right': 550},
                       'right': {'up': 550, 'down': 410}, 
@@ -27,6 +52,12 @@ turnThresholdLines = {'up': {'left': 410, 'right': 550},
                       'left': {'up': 550, 'down': 410}, 
                       } # coming from up, right, down, left
 
+## signals
+signalCoords = [(480, 410), (530, 460), (480, 510), (430, 460)]
+signalTextCoords = [(480, 390), (560, 460), (480, 560), (410, 460)]
+defaultGreenSignalDuration = 10
+defaultYellowSignalDuration = 3
+defaultRedSignalDuration = 13
 
 ### global state
 signals = []
@@ -38,7 +69,90 @@ carsNotTurned = {'up': [], 'right': [], 'down': [], 'left': []}
 
 ### initialize pygame
 pygame.init()
-simulation = pygame.sprite.Group()
+simulatedCars = pygame.sprite.Group()
+simulatedPedestrians = pygame.sprite.Group()
+
+pedestriansInNorthCrossWalk = set()
+pedestriansInEastCrossWalk = set()
+pedestriansInSouthCrossWalk = set()
+pedestriansInWestCrossWalk = set()
+
+class Pedestrian(pygame.sprite.Sprite):
+    def __init__(self, startingPositionNum: int, id: int):
+        pygame.sprite.Sprite.__init__(self)
+        self.startingPosition = pedestrianStartingPositions[startingPositionNum]
+        self.movingDirection = pedestrianDirections[self.startingPosition][random.randint(0, 1)]
+        self.coords = pedestrianStartingCoords[self.startingPosition]
+        self.x = self.coords[0]
+        self.y = self.coords[1]
+        self.image = pygame.transform.scale(pygame.image.load('images/person.jpeg'), (20, 20))
+        self.speed = speeds['person']
+        self.id = id
+        simulatedPedestrians.add(self)
+    
+    def render(self, screen: pygame.surface.Surface):
+        screen.blit(self.image, (self.x, self.y))
+
+    def move(self):
+        if (self.startingPosition == 'nw'):
+            if ((self.movingDirection == 'right' and currentGreenSignals == 1) or self.x > pedestrianStartingCoords['nw'][0]):
+                self.x += self.speed
+                pedestriansInNorthCrossWalk.add(self.id)
+                if (self.x > pedestrianStartingCoords['ne'][0]):
+                    simulatedPedestrians.remove(self)
+                    pedestriansInNorthCrossWalk.remove(self.id)
+            elif ((self.movingDirection == 'down' and currentGreenSignals == 0) or self.y > pedestrianStartingCoords['nw'][1]):
+                self.y += self.speed
+                pedestriansInWestCrossWalk.add(self.id)
+                if (self.y > pedestrianStartingCoords['sw'][1]):
+                    simulatedPedestrians.remove(self)
+                    pedestriansInWestCrossWalk.remove(self.id)
+        elif (self.startingPosition == 'ne'):
+            if ((self.movingDirection == 'left' and currentGreenSignals == 1) or self.x < pedestrianStartingCoords['ne'][0]):
+                self.x -= self.speed
+                pedestriansInNorthCrossWalk.add(self.id)
+                if (self.x < pedestrianStartingCoords['nw'][0]):
+                    simulatedPedestrians.remove(self)
+                    pedestriansInNorthCrossWalk.remove(self.id)
+            elif ((self.movingDirection == 'down' and currentGreenSignals == 0) or self.y > pedestrianStartingCoords['ne'][1]):
+                self.y += self.speed
+                pedestriansInEastCrossWalk.add(self.id)
+                if (self.y > pedestrianStartingCoords['se'][1]):
+                    simulatedPedestrians.remove(self)
+                    pedestriansInEastCrossWalk.remove(self.id)
+        elif (self.startingPosition == 'se'):
+            if ((self.movingDirection == 'left' and currentGreenSignals == 1) or self.x < pedestrianStartingCoords['se'][0]):
+                self.x -= self.speed
+                pedestriansInSouthCrossWalk.add(self.id)
+                if (self.x < pedestrianStartingCoords['sw'][0]):
+                    simulatedPedestrians.remove(self)
+                    pedestriansInSouthCrossWalk.remove(self.id)
+            elif ((self.movingDirection == 'up' and currentGreenSignals == 0) or self.y < pedestrianStartingCoords['se'][1]):
+                self.y -= self.speed
+                pedestriansInEastCrossWalk.add(self.id)
+                if (self.y < pedestrianStartingCoords['ne'][1]):
+                    simulatedPedestrians.remove(self)
+                    pedestriansInEastCrossWalk.remove(self.id)
+        elif (self.startingPosition == 'sw'):
+            if ((self.movingDirection == 'right' and currentGreenSignals == 1) or self.x > pedestrianStartingCoords['sw'][0]):
+                self.x += self.speed
+                pedestriansInSouthCrossWalk.add(self.id)
+                if (self.x > pedestrianStartingCoords['se'][0]):
+                    simulatedPedestrians.remove(self)
+                    pedestriansInSouthCrossWalk.remove(self.id)
+            elif ((self.movingDirection == 'up' and currentGreenSignals == 0) or self.y < pedestrianStartingCoords['sw'][1]):
+                self.y -= self.speed
+                pedestriansInWestCrossWalk.add(self.id)
+                if (self.y < pedestrianStartingCoords['nw'][1]):
+                    simulatedPedestrians.remove(self)
+                    pedestriansInWestCrossWalk.remove(self.id)
+
+def generatePedestrians():
+    count = 1
+    while (True):
+        Pedestrian(random.randint(0, 3), count)
+        count += 1
+        time.sleep(5)
 
 class TrafficSignal:
     def __init__(self, redDuration: int, yellowDuration: int, greenDuration: int):
@@ -56,10 +170,9 @@ class Car(pygame.sprite.Sprite):
         self.destinationDirection = directionNums[validIndices[random.randint(0, 2)]]
         self.x = x[self.startingLocation]
         self.y = y[self.startingLocation]
-        self.originalImage = pygame.transform.scale(pygame.image.load('images/car.png'), (30, 30))
         self.image = pygame.transform.scale(pygame.image.load('images/car.png'), (30, 30))
         self.speed = speeds['car']
-        simulation.add(self)
+        simulatedCars.add(self)
     
     def render(self, screen: pygame.surface.Surface):
         screen.blit(self.image, (self.x, self.y))
@@ -216,6 +329,7 @@ def main():
     # car = pygame.transform.scale(car, (30, 30))
     # car_x = 1000
     # car_y = 420
+
     running = True
     clock = pygame.time.Clock()
 
@@ -228,6 +342,11 @@ def main():
     carThread = threading.Thread(name="generateCars", target=generateCars, args=())
     carThread.daemon = True
     carThread.start()
+
+    # generate pedestrians
+    pedestrianThread = threading.Thread(name="generatePedestrians", target=generatePedestrians, args=())
+    pedestrianThread.daemon = True
+    pedestrianThread.start()
 
     while running:
         for event in pygame.event.get():
@@ -242,6 +361,8 @@ def main():
 
         font = pygame.font.Font(None, 30)
         screen.blit(background,(0,0))   # display background in simulation
+
+        # screen.blit(pedestrian, (pedX, pedY))
         
         for i in range(0, 2):
             # display signal
@@ -267,9 +388,14 @@ def main():
             screen.blit(signalText, signalTextCoords[i])
             screen.blit(signalText, signalTextCoords[i+2])
 
-        for car in simulation:
+        for car in simulatedCars:
             car.render(screen)
             car.move()
+        
+        for pedestrian in simulatedPedestrians:
+            pedestrian.render(screen)
+            pedestrian.move()
+
         pygame.display.update()
         clock.tick(60)
 
