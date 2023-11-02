@@ -5,7 +5,7 @@ import pygame
 import sys
 
 ### constants
-speeds = {'car': 2.0, 'person': 1.0}
+speeds = {'car': 2.0, 'person': 2.0}
 ## pedestrians
 pedestrianDirections = {
     'nw': {
@@ -30,8 +30,8 @@ pedestrianStartingPositions = {0: 'nw', 1: 'ne', 2: 'se', 3: 'sw'}
 
 pedestrianStartingCoords = {
     'nw': (320, 340),
-    'ne': (620, 320),
-    'se': (640, 620),
+    'ne': (640, 320),
+    'se': (660, 620),
     'sw': (340, 640)
 }
 
@@ -188,92 +188,152 @@ class Car(pygame.sprite.Sprite):
                 if (currentGreenSignals == 0 
                     or ((yellowSignalFlag or currentGreenSignals != 0) and self.y < stopLines['up']) 
                     or self.y > stopLines['up']):
-                    self.y += self.speed
-                    
-            elif (self.destinationDirection == 'left' and westCrossWalkEmpty()):
-                if (self.y == turnThresholdLines['up']['left']):
+                    if ((self.y == stopLines['up'] and not northCrossWalkEmpty()) or (self.y < stopLines['down'] - 100 and not southCrossWalkEmpty())):
+                        pass
+                    else:
+                        self.y += self.speed
+
+            elif (self.destinationDirection == 'left'):
+                if (self.x < stopLines['left'] + 100 and self.y == turnThresholdLines['up']['left']):
                     self.x -= self.speed
+                elif (self.y == turnThresholdLines['up']['left']):
+                    if (self.x > stopLines['left'] + 100 or (self.x == stopLines['left'] + 100 and westCrossWalkEmpty())):
+                        self.x -= self.speed
                 elif ((currentGreenSignals == 0 and self.y < turnThresholdLines['up']['left'])
                       or ((yellowSignalFlag or currentGreenSignals != 0) and self.y < stopLines['up'])
                       or (self.y > stopLines['up'] and self.y < turnThresholdLines['up']['left'])):
-                    self.y += self.speed
+                    if (self.y == stopLines['up'] and not northCrossWalkEmpty()):
+                        pass
+                    else:
+                        self.y += self.speed
 
-            elif (self.destinationDirection == 'right' and eastCrossWalkEmpty()):
-                if (self.y == turnThresholdLines['up']['right']):
+            elif (self.destinationDirection == 'right'):
+                if (self.x > stopLines['right'] - 100 and self.y == turnThresholdLines['up']['right']):
                     self.x += self.speed
+                elif (self.y == turnThresholdLines['up']['right']):
+                    if (self.x < stopLines['right'] - 100 or (self.x == stopLines['right'] - 100 and eastCrossWalkEmpty())):
+                        self.x += self.speed
                 elif ((currentGreenSignals == 0 and self.y < turnThresholdLines['up']['right'])
                       or ((yellowSignalFlag or currentGreenSignals != 0) and self.y < stopLines['up'])
                       or (self.y > stopLines['up'] and self.y < turnThresholdLines['up']['right'])):
-                    self.y += self.speed
+                    if (self.y == stopLines['up'] and not northCrossWalkEmpty()):
+                        pass
+                    else:
+                        self.y += self.speed
                 
         elif (self.startingLocation == 'down'):
             if (self.destinationDirection == 'up'):
                 if (currentGreenSignals == 0 
                     or ((yellowSignalFlag or currentGreenSignals != 0) and self.y > stopLines['down']) 
                     or self.y < stopLines['down']):
-                    self.y -= self.speed
+                    if ((self.y == stopLines['down'] and not southCrossWalkEmpty()) or (self.y > stopLines['up'] + 100 and not northCrossWalkEmpty())):
+                        pass
+                    else:
+                        self.y -= self.speed
                     
-            elif (self.destinationDirection == 'left' and westCrossWalkEmpty()):
-                if (self.y == turnThresholdLines['down']['left']):
+            elif (self.destinationDirection == 'left'):
+                if (self.x < stopLines['left'] + 100 and self.y == turnThresholdLines['up']['left']):
                     self.x -= self.speed
+                elif (self.y == turnThresholdLines['up']['left']):
+                    if (self.x > stopLines['left'] + 100 or (self.x == stopLines['left'] + 100 and westCrossWalkEmpty())):
+                        self.x -= self.speed
                 elif ((currentGreenSignals == 0 and self.y > turnThresholdLines['down']['left'])
                       or ((yellowSignalFlag or currentGreenSignals != 0) and self.y > stopLines['down'])
                       or (self.y < stopLines['down'] and self.y > turnThresholdLines['down']['left'])):
-                    self.y -= self.speed
+                    if (self.y == stopLines['down'] and not southCrossWalkEmpty()):
+                        pass
+                    else:
+                        self.y -= self.speed
 
-            elif (self.destinationDirection == 'right' and eastCrossWalkEmpty()):
-                if (self.y == turnThresholdLines['down']['right']):
+            elif (self.destinationDirection == 'right'):
+                if (self.x > stopLines['right'] - 100 and self.y == turnThresholdLines['up']['right']):
                     self.x += self.speed
+                elif (self.y == turnThresholdLines['up']['right']):
+                    if (self.x < stopLines['right'] - 100 or (self.x == stopLines['right'] - 100 and eastCrossWalkEmpty())):
+                        self.x += self.speed
                 elif ((currentGreenSignals == 0 and self.y > turnThresholdLines['down']['right'])
                       or ((yellowSignalFlag or currentGreenSignals != 0) and self.y > stopLines['down'])
                       or (self.y < stopLines['down'] and self.y > turnThresholdLines['down']['right'])):
-                    self.y -= self.speed
+                    if (self.y == stopLines['down'] and not southCrossWalkEmpty()):
+                        pass
+                    else:
+                        self.y -= self.speed
                 
         elif (self.startingLocation == 'left'):
             if (self.destinationDirection == 'right'):
                 if (currentGreenSignals == 1 
                     or ((yellowSignalFlag or currentGreenSignals != 1) and self.x < stopLines['left']) 
                     or self.x > stopLines['left']):
-                    self.x += self.speed
+                    if ((self.x == stopLines['left'] and not westCrossWalkEmpty()) or (self.x < stopLines['right'] - 100 and not eastCrossWalkEmpty())):
+                        pass
+                    else:
+                        self.x += self.speed
                     
-            elif (self.destinationDirection == 'up' and northCrossWalkEmpty()):
-                if (self.x == turnThresholdLines['left']['up']):
+            elif (self.destinationDirection == 'up'):
+                if (self.y < stopLines['up'] + 100 and self.x == turnThresholdLines['left']['up']):
                     self.y -= self.speed
+                elif (self.x == turnThresholdLines['left']['up']):
+                    if (self.y > stopLines['up'] + 100 or (self.y == stopLines['up'] + 100 and northCrossWalkEmpty())):
+                        self.y -= self.speed
                 elif ((currentGreenSignals == 1 and self.x < turnThresholdLines['left']['up'])
                       or ((yellowSignalFlag or currentGreenSignals != 1) and self.x < stopLines['left'])
                       or (self.x > stopLines['left'] and self.x < turnThresholdLines['left']['up'])):
-                    self.x += self.speed
+                    if (self.x == stopLines['left'] and not westCrossWalkEmpty()):
+                        pass
+                    else:
+                        self.x += self.speed
 
-            elif (self.destinationDirection == 'down' and southCrossWalkEmpty()):
-                if (self.x == turnThresholdLines['left']['down']):
+            elif (self.destinationDirection == 'down'):
+                if (self.y > stopLines['down'] - 100 and self.x == turnThresholdLines['left']['down']):
                     self.y += self.speed
+                elif (self.x == turnThresholdLines['left']['down']):
+                    if (self.y < stopLines['down'] - 100 or (self.y == stopLines['down'] - 100 and southCrossWalkEmpty())):
+                        self.y += self.speed
                 elif ((currentGreenSignals == 1 and self.x < turnThresholdLines['left']['down'])
                       or ((yellowSignalFlag or currentGreenSignals != 1) and self.x < stopLines['left'])
                       or (self.x > stopLines['left'] and self.x < turnThresholdLines['left']['down'])):
-                    self.x += self.speed
+                    if (self.x == stopLines['left'] and not westCrossWalkEmpty()):
+                        pass
+                    else:
+                        self.x += self.speed
 
         elif (self.startingLocation == 'right'):
             if (self.destinationDirection == 'left'):
                 if (currentGreenSignals == 1 
                     or ((yellowSignalFlag or currentGreenSignals != 1) and self.x > stopLines['right']) 
                     or self.x < stopLines['right']):
-                    self.x -= self.speed
+                    if ((self.x == stopLines['right'] and not eastCrossWalkEmpty()) or (self.x > stopLines['left'] + 100 and not westCrossWalkEmpty())):
+                        pass
+                    else:
+                        self.x -= self.speed
                     
-            elif (self.destinationDirection == 'up' and northCrossWalkEmpty()):
-                if (self.x == turnThresholdLines['right']['up']):
+            elif (self.destinationDirection == 'up'):
+                if (self.y < stopLines['up'] + 100 and self.x == turnThresholdLines['left']['up']):
                     self.y -= self.speed
+                elif (self.x == turnThresholdLines['left']['up']):
+                    if (self.y > stopLines['up'] + 100 or (self.y == stopLines['up'] + 100 and northCrossWalkEmpty())):
+                        self.y -= self.speed
                 elif ((currentGreenSignals == 1 and self.x > turnThresholdLines['right']['up'])
                       or ((yellowSignalFlag or currentGreenSignals != 1) and self.x > stopLines['right'])
                       or (self.x < stopLines['right'] and self.x > turnThresholdLines['right']['up'])):
-                    self.x -= self.speed
+                    if (self.x == stopLines['right'] and not eastCrossWalkEmpty()):
+                        pass
+                    else:
+                        self.x -= self.speed
 
-            elif (self.destinationDirection == 'down' and southCrossWalkEmpty()):
-                if (self.x == turnThresholdLines['right']['down']):
+            elif (self.destinationDirection == 'down'):
+                if (self.y > stopLines['down'] - 100 and self.x == turnThresholdLines['left']['down']):
                     self.y += self.speed
+                elif (self.x == turnThresholdLines['left']['down']):
+                    if (self.y < stopLines['down'] - 100 or (self.y == stopLines['down'] - 100 and southCrossWalkEmpty())):
+                        self.y += self.speed
                 elif ((currentGreenSignals == 1 and self.x > turnThresholdLines['right']['down'])
                       or ((yellowSignalFlag or currentGreenSignals != 1) and self.x > stopLines['right'])
                       or (self.x < stopLines['right'] and self.x > turnThresholdLines['right']['down'])):
-                    self.x -= self.speed
+                    if (self.x == stopLines['right'] and not eastCrossWalkEmpty()):
+                        pass
+                    else:
+                        self.x -= self.speed
 
 def generateCars():
     while (True):
